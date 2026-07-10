@@ -1,0 +1,21 @@
+{
+  "name": "toddler-mode",
+  "description": "Highlight any text and get a tiny summary explained like you're a toddler.",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "wxt",
+    "build": "wxt build",
+    "zip": "wxt zip",
+    "check": "wxt prepare && tsc --noEmit",
+    "test": "vitest run --passWithNoTests",
+    "postinstall": "wxt prepare"
+  },
+  "devDependencies": {
+    "happy-dom": "^20.10.6",
+    "typescript": "^7.0.2",
+    "vitest": "^4.1.10",
+    "wxt": "^0.20.27"
+  }
+}
