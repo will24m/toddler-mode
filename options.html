@@ -23,13 +23,22 @@
         align-items: center;
         gap: 8px;
       }
+      h2 {
+        font-size: 16px;
+        margin: 28px 0 4px;
+      }
       p.sub {
         color: #555;
         margin-top: -6px;
         font-size: 14px;
       }
+      hr {
+        border: none;
+        border-top: 1px solid #eee;
+        margin: 28px 0 0;
+      }
       .field {
-        margin: 18px 0;
+        margin: 16px 0;
       }
       label {
         display: block;
@@ -94,6 +103,33 @@
         cursor: pointer;
         font-size: 13px;
       }
+      .status-card {
+        margin-top: 8px;
+        padding: 12px 14px;
+        background: #f6faf6;
+        border: 1px solid #dcebdc;
+        border-radius: 10px;
+        font-size: 14px;
+      }
+      #localStatus {
+        font-weight: 600;
+      }
+      #downloadLocal {
+        display: none;
+        margin-top: 10px;
+        background: var(--orange);
+        color: #fff;
+        border: none;
+        padding: 8px 14px;
+        border-radius: 8px;
+        font-size: 14px;
+        font-weight: 600;
+        cursor: pointer;
+      }
+      #downloadLocal:disabled {
+        opacity: 0.6;
+        cursor: default;
+      }
       .note {
         margin-top: 24px;
         padding: 12px 14px;
@@ -107,7 +143,22 @@
   </head>
   <body>
     <h1>🧸 Toddler Mode</h1>
-    <p class="sub">Pick an AI, paste your key, and start getting baby-simple summaries.</p>
+    <p class="sub">Highlight text, tap the bear, get a baby-simple summary.</p>
+
+    <h2>On-device AI (recommended)</h2>
+    <p class="hint">
+      Runs privately on your device with Chrome's built-in Gemini Nano — no key, nothing sent to a server.
+      Used automatically whenever it's available.
+    </p>
+    <div class="status-card">
+      <div id="localStatus">Checking…</div>
+      <button type="button" id="downloadLocal">Set up on-device AI</button>
+    </div>
+
+    <hr />
+
+    <h2>Cloud fallback (optional)</h2>
+    <p class="hint">Used only when on-device AI isn't available on this device.</p>
 
     <div class="field">
       <label for="provider">AI provider</label>
@@ -137,7 +188,7 @@
     </div>
 
     <div class="row">
-      <button id="save">Save settings</button>
+      <button type="button" id="save">Save settings</button>
       <span id="status"></span>
     </div>
 

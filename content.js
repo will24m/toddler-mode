@@ -3,15 +3,26 @@
 
   const ICON_SIZE = 30;
   const MIN_SELECTION_LENGTH = 3;
-  const MAX_SELECTION_LENGTH = 8000; // don't ship a whole novel to the API
+  const MAX_SELECTION_LENGTH = 8000; // don't ship a whole novel to the model
 
   const HOST_ID = "toddler-mode-host";
+
+  // The toddler voice. Kept in sync with the same constant in background.js
+  // (used there for the cloud fallback path).
+  const TODDLER_PROMPT =
+    "You explain things to a 3-year-old. Read the text and say what it means " +
+    "using only short, simple words a small kid knows. Keep it to 2 or 3 short " +
+    "sentences. Be warm, fun, and a little silly. Never use big or fancy words. " +
+    "Do not mention that you are an AI.";
 
   let host = null;
   let shadow = null;
   let iconEl = null;
   let bubbleEl = null;
-  let currentPort = null;
+
+  let currentPort = null; // cloud fallback port
+  let localSession = null; // on-device Gemini Nano session
+  let localController = null; // aborts the on-device request
 
   let lastSelectionText = "";
   let lastRect = null; // viewport-relative rect of the selection
@@ -108,17 +119,11 @@
   });
 
   // Fixed-position UI would drift on scroll — hide the icon, drop the bubble.
-  window.addEventListener(
-    "scroll",
-    () => {
-      hideIcon();
-    },
-    true
-  );
+  window.addEventListener("scroll", () => hideIcon(), true);
 
   // ---- Bubble ------------------------------------------------------------
 
-  async function openBubble() {
+  function openBubble() {
     ensureHost();
     closeBubble();
     hideIcon();
@@ -138,8 +143,10 @@
     loading.appendChild(el("span", "tm-dot"));
     loading.appendChild(el("span", "tm-dot"));
     loading.appendChild(el("span", "tm-dot"));
+    const status = el("div", "tm-status");
     const textEl = el("div", "tm-text");
     body.appendChild(loading);
+    body.appendChild(status);
     body.appendChild(textEl);
 
     bubbleEl.appendChild(header);
@@ -147,16 +154,20 @@
     shadow.appendChild(bubbleEl);
 
     positionBubble();
-
-    const config = await getConfig();
-    if (!isConfigComplete(config)) {
-      showSetupPrompt(body, loading);
-      return;
-    }
-    startStreaming(config, textEl, loading);
+    runSummary(textEl, loading, status, body);
   }
 
   function closeBubble() {
+    // Abort on-device work.
+    if (localController) {
+      try {
+        localController.abort();
+      } catch (_) {
+        /* ignore */
+      }
+    }
+    destroyLocal();
+    // Abort cloud work.
     if (currentPort) {
       try {
         currentPort.disconnect();
@@ -172,6 +183,7 @@
   }
 
   function positionBubble() {
+    if (!bubbleEl) return;
     const width = 300;
     const margin = 10;
     const rect = lastRect;
@@ -193,9 +205,107 @@
     bubbleEl.style.top = top + "px";
   }
 
-  // ---- Streaming client --------------------------------------------------
+  // ---- Summary orchestration (local first, cloud fallback) ---------------
 
-  function startStreaming(config, textEl, loadingEl) {
+  async function runSummary(textEl, loadingEl, statusEl, body) {
+    // 1) Try on-device Gemini Nano — private, no key, no network.
+    const result = await tryLocalSummary(textEl, loadingEl, statusEl);
+    if (result === "ok" || result === "aborted") return;
+
+    // 2) Fall back to the configured cloud provider.
+    const config = await getConfig();
+    if (!isConfigComplete(config)) {
+      showSetupPrompt(body, loadingEl, statusEl);
+      return;
+    }
+    streamCloud(config, textEl, loadingEl, statusEl);
+  }
+
+  // Returns "ok" | "aborted" | "unavailable".
+  async function tryLocalSummary(textEl, loadingEl, statusEl) {
+    if (typeof LanguageModel === "undefined") return "unavailable";
+
+    let availability;
+    try {
+      availability = await LanguageModel.availability();
+    } catch (_) {
+      return "unavailable";
+    }
+    if (!availability || availability === "unavailable") return "unavailable";
+
+    localController = new AbortController();
+    const signal = localController.signal;
+
+    try {
+      if (availability !== "available") {
+        statusEl.textContent = "Getting my brain ready…";
+      }
+
+      const session = await LanguageModel.create({
+        initialPrompts: [{ role: "system", content: TODDLER_PROMPT }],
+        monitor(m) {
+          m.addEventListener("downloadprogress", (e) => {
+            if (!bubbleEl) return;
+            const frac = e && e.total ? e.loaded / e.total : e ? e.loaded : 0;
+            statusEl.textContent = "Getting my brain ready… " + Math.round((frac || 0) * 100) + "%";
+          });
+        },
+        signal,
+      });
+
+      if (!bubbleEl) {
+        destroyLocal();
+        return "aborted";
+      }
+      localSession = session;
+      statusEl.textContent = "";
+      loadingEl.style.display = "none";
+
+      // promptStreaming yields the FULL text so far on each chunk — emit only
+      // the newly added suffix so we don't repeat text.
+      const stream = session.promptStreaming(lastSelectionText, { signal });
+      let prev = "";
+      for await (const chunk of stream) {
+        if (!bubbleEl) break;
+        let delta;
+        if (typeof chunk === "string" && chunk.startsWith(prev)) {
+          delta = chunk.slice(prev.length);
+          prev = chunk;
+        } else {
+          delta = String(chunk);
+          prev += delta;
+        }
+        if (delta) textEl.textContent += delta;
+        positionBubble();
+      }
+
+      destroyLocal();
+      if (bubbleEl && !textEl.textContent) textEl.textContent = "Hmm, I got nothing to say!";
+      return "ok";
+    } catch (err) {
+      destroyLocal();
+      if (err && err.name === "AbortError") return "aborted";
+      // On-device failed unexpectedly — let the caller try the cloud.
+      return "unavailable";
+    }
+  }
+
+  function destroyLocal() {
+    if (localSession) {
+      try {
+        localSession.destroy();
+      } catch (_) {
+        /* ignore */
+      }
+      localSession = null;
+    }
+    localController = null;
+  }
+
+  // ---- Cloud fallback (streams over a port to the service worker) --------
+
+  function streamCloud(config, textEl, loadingEl, statusEl) {
+    statusEl.textContent = "";
     let pending = "";
     let timer = null;
     let gotFirst = false;
@@ -226,7 +336,7 @@
           loadingEl.style.display = "none";
         }
         enqueue(msg.text);
-        positionBubble(); // keep it on screen as it grows
+        positionBubble();
       } else if (msg.type === "done") {
         loadingEl.style.display = "none";
         if (!gotFirst && !textEl.textContent) {
@@ -250,9 +360,12 @@
     textEl.parentNode.appendChild(errEl);
   }
 
-  function showSetupPrompt(body, loadingEl) {
+  function showSetupPrompt(body, loadingEl, statusEl) {
     loadingEl.style.display = "none";
-    body.appendChild(el("div", "tm-text", "Pssst! I need a key to talk. Let's set it up first!"));
+    statusEl.textContent = "";
+    body.appendChild(
+      el("div", "tm-text", "I can't find on-device AI here, and there's no cloud key yet. Let's set one up!")
+    );
     const btn = el("button", "tm-setup-btn", "Open settings");
     btn.type = "button";
     btn.addEventListener("click", () => {
@@ -261,7 +374,7 @@
     body.appendChild(btn);
   }
 
-  // ---- Config ------------------------------------------------------------
+  // ---- Config (cloud fallback creds) -------------------------------------
 
   function getConfig() {
     return new Promise((resolve) => {
@@ -339,6 +452,8 @@
     .tm-close:hover { background: rgba(255,255,255,0.75); }
 
     .tm-body { padding: 14px; }
+    .tm-status { font-size: 13px; color: #777; margin-bottom: 6px; }
+    .tm-status:empty { margin: 0; }
     .tm-text {
       font-size: 16px; line-height: 1.5;
       white-space: pre-wrap; word-wrap: break-word;
