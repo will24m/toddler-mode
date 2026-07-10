@@ -26,4 +26,10 @@ describe('createDeltaExtractor', () => {
     const extract = createDeltaExtractor();
     expect(extract(123)).toBe('123');
   });
+
+  it('never treats a non-string chunk as a prefix extension (legacy parity)', () => {
+    const extract = createDeltaExtractor();
+    expect(extract(5)).toBe('5');
+    expect(extract(56)).toBe('56'); // raw delta, NOT '6'
+  });
 });

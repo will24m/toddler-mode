@@ -7,7 +7,7 @@ export function createDeltaExtractor(): (chunk: unknown) => string {
   return (chunk: unknown): string => {
     const text = String(chunk);
     let delta: string;
-    if (text.startsWith(prev)) {
+    if (typeof chunk === 'string' && text.startsWith(prev)) {
       delta = text.slice(prev.length);
       prev = text;
     } else {
