@@ -11,6 +11,18 @@ const STALL_TIMEOUT_MS = 20_000;
 type Port = ReturnType<typeof browser.runtime.connect>;
 
 export default defineBackground(() => {
+  // One-time onboarding: the options page explains on-device AI status and
+  // the optional cloud setup. Fresh installs only — never on update.
+  browser.runtime.onInstalled.addListener((details) => {
+    if (details.reason === 'install') browser.runtime.openOptionsPage();
+  });
+
+  // The action has no popup, so make the toolbar button do the obvious
+  // thing instead of nothing.
+  browser.action.onClicked.addListener(() => {
+    browser.runtime.openOptionsPage();
+  });
+
   // Open the options page when the content script asks (content scripts
   // can't call openOptionsPage themselves).
   browser.runtime.onMessage.addListener((msg: unknown) => {

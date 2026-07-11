@@ -5,6 +5,9 @@ export default defineConfig({
     name: 'Toddler Mode',
     description: "Highlight any text and get a tiny summary explained like you're a toddler.",
     homepage_url: 'https://github.com/will24m/toddler-mode',
+    // The floor we actually test against. The on-device Gemini Nano path
+    // additionally wants Chrome 138+ and is feature-detected at runtime.
+    minimum_chrome_version: '116',
     permissions: ['storage'],
     // Only the two default provider origins are granted at install. Custom
     // endpoints request their specific origin from the options page at
