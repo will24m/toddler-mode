@@ -73,11 +73,31 @@ Details → Extension options).
   Pick a **provider**, confirm **endpoint** and **model**, paste your **API key**, then **Save**.
   - OpenAI default: `https://api.openai.com/v1/chat/completions`, model `gpt-4o-mini`
   - Anthropic default: `https://api.anthropic.com/v1/messages`, model `claude-haiku-4-5`
-  - Custom: any OpenAI-compatible endpoint.
+  - Custom: any OpenAI-compatible endpoint (HTTPS required; plain HTTP allowed only for
+    `localhost`, e.g. Ollama). Saving a custom endpoint prompts once for permission to
+    reach that origin.
 
 Your API key is stored in `chrome.storage.local` (this device only, never synced) and is
 only ever read by the background service worker. Provider / endpoint / model sync across
 your signed-in browsers.
+
+## Privacy & security
+
+The developer collects **nothing** — no analytics, no telemetry, no server. Full policy:
+[PRIVACY.md](PRIVACY.md). Chrome Web Store submission notes (permission justifications,
+data-usage disclosures): [docs/store-listing.md](docs/store-listing.md).
+
+Hardening built in:
+
+- Host permissions are scoped to the two default provider origins; custom endpoints get a
+  per-origin grant at save-time (`optional_host_permissions`) instead of a blanket
+  `<all_urls>`.
+- The API key never leaves the background service worker; the content script only ever
+  sends the selected text over a typed port, and the background strictly validates every
+  message's shape and the 3–8000 char selection bounds before doing anything with it.
+- Endpoint URLs are validated on save **and** re-validated before every fetch (HTTPS-only
+  except localhost, no embedded credentials), and the fetch uses `redirect: "error"` so
+  auth headers can never follow a redirect to another origin.
 
 ## Use
 
