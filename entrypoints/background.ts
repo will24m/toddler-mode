@@ -35,7 +35,12 @@ export default defineBackground(() => {
     port.onMessage.addListener((msg: unknown) => {
       // Strict parse — the background never trusts the port message shape.
       const text = parseSummarizeText(msg);
-      if (text === null) return;
+      if (text === null) {
+        // Always answer, even garbage — a silent drop would leave the
+        // bubble's loading dots animating forever.
+        post(port, { type: 'error', message: 'Something went wrong. Try selecting again.' });
+        return;
+      }
       runSummarize(text, port, controller).catch((err) => {
         if (active) post(port, { type: 'error', message: errToMessage(err) });
       });
@@ -90,6 +95,22 @@ async function runSummarize(
     stallTimer = setTimeout(onStall, STALL_TIMEOUT_MS);
   };
 
+  // Coalesce parsed tokens so a chatty SSE stream doesn't become one port
+  // message (and one content-script wakeup) per token. ~15ms matches the
+  // typewriter cadence on the receiving side.
+  let tokenBuffer = '';
+  let flushTimer: ReturnType<typeof setTimeout> | null = null;
+  const flushTokens = () => {
+    if (flushTimer !== null) {
+      clearTimeout(flushTimer);
+      flushTimer = null;
+    }
+    if (tokenBuffer) {
+      post(port, { type: 'chunk', text: tokenBuffer });
+      tokenBuffer = '';
+    }
+  };
+
   try {
     const res = await fetch(request.url, {
       method: 'POST',
@@ -109,7 +130,9 @@ async function runSummarize(
 
     const splitter = createSseLineSplitter((line) => {
       const token = request.parseLine(line);
-      if (token) post(port, { type: 'chunk', text: token });
+      if (!token) return;
+      tokenBuffer += token;
+      if (flushTimer === null) flushTimer = setTimeout(flushTokens, 15);
     });
 
     const reader = res.body.getReader();
@@ -123,11 +146,14 @@ async function runSummarize(
     splitter.push(decoder.decode());
     splitter.flush();
 
+    flushTokens();
     post(port, { type: 'done' });
   } catch (err) {
     if (stalled) throw new Error('The API stopped responding. Try again.');
     throw err;
   } finally {
+    // Deliver any partial text before an error reaches the bubble.
+    flushTokens();
     clearTimeout(stallTimer);
   }
 }
