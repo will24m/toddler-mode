@@ -1,10 +1,8 @@
 import '@/assets/content.css';
 import { createIcon } from '@/components/icon';
+import { MAX_SELECTION_LENGTH, MIN_SELECTION_LENGTH } from '@/utils/messaging';
 import { clampIconPosition, type Point, type RectLike } from '@/utils/positioning';
 import { SummarySession } from './session';
-
-const MIN_SELECTION_LENGTH = 3;
-const MAX_SELECTION_LENGTH = 8000; // don't ship a whole novel to the model
 
 // Keys that can change a selection when held with Shift.
 const SELECTION_KEYS = new Set([
