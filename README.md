@@ -111,6 +111,11 @@ Press `Esc`, click the ✕, or click elsewhere to close it. The bubble stays anc
 your selection while you scroll. Clicking the toolbar icon opens the settings page
 (it also opens once automatically on first install).
 
+Prefer it quiet? Turn off the selection icon in settings and trigger summaries with the
+right-click menu ("🧸 Explain like I'm a toddler") or the keyboard shortcut
+(`Alt+Shift+T`, rebindable at `chrome://extensions/shortcuts`). Use **Save & test** in
+settings to verify your cloud setup end to end.
+
 ## Tweak the voice
 
 The toddler personality is the `TODDLER_PROMPT` string in

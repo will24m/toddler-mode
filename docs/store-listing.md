@@ -17,6 +17,7 @@ real page and of the options page work well).
 | Permission | Justification to paste |
 | --- | --- |
 | `storage` | Stores the user's own settings: AI provider choice, endpoint URL, and model name (sync storage), and the user's own API key (local storage only, never synced). Nothing else is stored. |
+| `contextMenus` | Adds one "🧸 Explain like I'm a toddler" item to the right-click menu for selected text — an alternative trigger to the on-page icon (and the main trigger when the user turns the icon off in settings). |
 | Content script on `<all_urls>` | The extension's single purpose is to summarize text the user highlights on any page they are reading. The content script only watches for the user's own selection and draws the icon/bubble UI; it reads no page content beyond the text the user actively highlights. |
 | `https://api.openai.com/*` | Default cloud endpoint: the highlighted text is sent to OpenAI's chat completions API with the user's own API key, only when the user clicks the extension's icon and only if on-device AI is unavailable. |
 | `https://api.anthropic.com/*` | Same as above for the Anthropic API, the other built-in provider option. |
