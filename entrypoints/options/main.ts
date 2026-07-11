@@ -160,7 +160,8 @@ function testConnection(): void {
   port.onMessage.addListener((raw: unknown) => {
     const msg = raw as PortResponse;
     if (msg.type === 'chunk' || msg.type === 'done') finish('It works! 🎉', false);
-    else if (msg.type === 'not-configured') finish('Fill in endpoint, model, and API key first.', true);
+    else if (msg.type === 'not-configured')
+      finish('Fill in endpoint, model, and API key first.', true);
     else if (msg.type === 'error') finish(msg.message, true);
   });
   port.postMessage({ type: 'summarize', text: 'Say hello in a few short words.' });

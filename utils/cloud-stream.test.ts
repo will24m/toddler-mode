@@ -23,13 +23,15 @@ const request: ProviderRequest = {
 
 describe('streamCloudSummary', () => {
   it('pumps SSE lines through the parser and emits tokens', async () => {
-    const fetchImpl = vi.fn().mockResolvedValue(
-      sseResponse([
-        'data: {"choices":[{"delta":{"content":"Hello "}}]}',
-        'data: {"choices":[{"delta":{"content":"bear"}}]}',
-        'data: [DONE]',
-      ]),
-    );
+    const fetchImpl = vi
+      .fn()
+      .mockResolvedValue(
+        sseResponse([
+          'data: {"choices":[{"delta":{"content":"Hello "}}]}',
+          'data: {"choices":[{"delta":{"content":"bear"}}]}',
+          'data: [DONE]',
+        ]),
+      );
     const tokens: string[] = [];
     const activity = vi.fn();
     await streamCloudSummary(request, new AbortController().signal, (t) => tokens.push(t), {
