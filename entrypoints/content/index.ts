@@ -139,7 +139,7 @@ export default defineContentScript({
       () => {
         hideIcon();
       },
-      true,
+      { capture: true, passive: true },
     );
   },
 });

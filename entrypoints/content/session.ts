@@ -49,7 +49,7 @@ export class SummarySession {
       },
       onDelta: (d) => {
         this.bubble.appendText(d);
-        this.reposition();
+        this.scheduleReposition();
       },
       isAlive: () => !this.destroyed,
     });
@@ -74,6 +74,16 @@ export class SummarySession {
     this.bubble.root.style.top = `${p.y}px`;
   }
 
+  // reposition() forces two layout reads, so every streaming/scroll/resize
+  // call site coalesces through one rAF — at most one layout pass per frame.
+  private scheduleReposition(): void {
+    if (this.rafId !== null) return;
+    this.rafId = requestAnimationFrame(() => {
+      this.rafId = null;
+      this.reposition();
+    });
+  }
+
   destroy(): void {
     if (this.destroyed) return;
     this.destroyed = true;
@@ -96,6 +106,7 @@ export class SummarySession {
     this.bubble.setStatus('');
     let gotFirst = false;
 
+    this.port?.disconnect();
     this.port = browser.runtime.connect({ name: SUMMARIZE_PORT });
 
     this.port.onMessage.addListener((raw: unknown) => {
@@ -107,7 +118,6 @@ export class SummarySession {
           this.bubble.hideLoading();
         }
         this.enqueue(msg.text);
-        this.reposition();
       } else if (msg.type === 'done') {
         this.bubble.hideLoading();
         if (!gotFirst && !this.bubble.getText()) {
@@ -119,7 +129,14 @@ export class SummarySession {
           void browser.runtime.sendMessage(openOptions);
         });
       } else if (msg.type === 'error') {
-        this.bubble.showError(msg.message);
+        // An error is never a dead end — offer a clean retry.
+        this.bubble.showError(msg.message, () => {
+          if (this.destroyed) return;
+          this.pending = '';
+          this.bubble.setText('');
+          this.startCloud();
+        });
+        this.scheduleReposition();
       }
     });
 
@@ -143,6 +160,9 @@ export class SummarySession {
       const n = Math.max(2, Math.ceil(this.pending.length / 8));
       this.bubble.appendText(this.pending.slice(0, n));
       this.pending = this.pending.slice(n);
+      // The typewriter is what actually grows the bubble, so this is the
+      // one place the cloud path needs to re-measure from.
+      this.scheduleReposition();
       this.typeTimer = setTimeout(() => this.reveal(), 20);
     } else {
       this.typeTimer = null;
@@ -150,13 +170,7 @@ export class SummarySession {
   }
 
   private attachViewportListeners(): void {
-    const onViewportChange = () => {
-      if (this.rafId !== null) return;
-      this.rafId = requestAnimationFrame(() => {
-        this.rafId = null;
-        this.reposition();
-      });
-    };
+    const onViewportChange = () => this.scheduleReposition();
     window.addEventListener('scroll', onViewportChange, { capture: true, passive: true });
     window.addEventListener('resize', onViewportChange, { passive: true });
     this.detachViewportListeners = () => {

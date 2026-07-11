@@ -55,4 +55,55 @@ describe('createBubble', () => {
     btn.click();
     expect(onOpen).toHaveBeenCalledOnce();
   });
+
+  it('offers a retry button when showError gets a retry callback', () => {
+    const onRetry = vi.fn();
+    const bubble = createBubble(() => {});
+    bubble.showError('boom', onRetry);
+    const btn = bubble.root.querySelector('.tm-retry-btn') as HTMLButtonElement;
+    expect(btn).not.toBeNull();
+    btn.click();
+    expect(onRetry).toHaveBeenCalledOnce();
+    // Retry resets the error slot and brings the loading dots back.
+    expect(bubble.root.querySelector('.tm-error')).toBeNull();
+    const loading = bubble.root.querySelector('.tm-loading') as HTMLElement;
+    expect(loading.style.display).not.toBe('none');
+  });
+
+  it('renders no retry button without a callback', () => {
+    const bubble = createBubble(() => {});
+    bubble.showError('boom');
+    expect(bubble.root.querySelector('.tm-retry-btn')).toBeNull();
+  });
+
+  it('copies the summary text from the header copy button', async () => {
+    const writeText = vi.fn().mockResolvedValue(undefined);
+    Object.defineProperty(navigator, 'clipboard', {
+      value: { writeText },
+      configurable: true,
+    });
+    const bubble = createBubble(() => {});
+    bubble.appendText('tiny summary');
+    const btn = bubble.root.querySelector('.tm-copy') as HTMLButtonElement;
+    expect(btn).not.toBeNull();
+    btn.click();
+    await Promise.resolve();
+    expect(writeText).toHaveBeenCalledWith('tiny summary');
+  });
+
+  it('keeps the page selection alive — buttons prevent mousedown default', () => {
+    const bubble = createBubble(() => {});
+    const closeBtn = bubble.root.querySelector('.tm-close') as HTMLButtonElement;
+    const e = new MouseEvent('mousedown', { cancelable: true, bubbles: true });
+    closeBtn.dispatchEvent(e);
+    expect(e.defaultPrevented).toBe(true);
+  });
+
+  it('is announced as a dialog with labelled controls', () => {
+    const bubble = createBubble(() => {});
+    expect(bubble.root.getAttribute('role')).toBe('dialog');
+    expect(bubble.root.getAttribute('aria-label')).toBeTruthy();
+    const closeBtn = bubble.root.querySelector('.tm-close') as HTMLButtonElement;
+    expect(closeBtn.getAttribute('aria-label')).toBeTruthy();
+  });
 });

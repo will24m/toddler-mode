@@ -5,6 +5,7 @@ export function createIcon(onActivate: () => void): HTMLButtonElement {
   btn.type = 'button';
   btn.className = 'tm-icon';
   btn.title = "Explain like I'm a toddler";
+  btn.setAttribute('aria-label', "Explain like I'm a toddler");
   btn.textContent = '🧸';
   // Keep the page selection alive when the icon is pressed.
   btn.addEventListener('mousedown', (e) => e.preventDefault());
