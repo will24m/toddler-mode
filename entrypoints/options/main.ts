@@ -1,13 +1,14 @@
 import '@/assets/options.css';
 import {
-  PROVIDER_DEFAULTS,
   apiKeyItem,
   endpointItem,
   loadCloudConfig,
   modelItem,
-  providerItem,
+  PROVIDER_DEFAULTS,
   type Provider,
+  providerItem,
 } from '@/utils/config';
+import { downloadProgressPercent } from '@/utils/download-progress';
 import { endpointOriginPattern, validateEndpoint } from '@/utils/endpoint';
 
 const providerEl = document.getElementById('provider') as HTMLSelectElement;
@@ -24,7 +25,8 @@ const downloadLocalEl = document.getElementById('downloadLocal') as HTMLButtonEl
 
 async function refreshLocalStatus(): Promise<void> {
   if (typeof LanguageModel === 'undefined') {
-    localStatusEl.textContent = '❌ Not available in this browser — the cloud fallback will be used.';
+    localStatusEl.textContent =
+      '❌ Not available in this browser — the cloud fallback will be used.';
     downloadLocalEl.style.display = 'none';
     return;
   }
@@ -44,7 +46,8 @@ async function refreshLocalStatus(): Promise<void> {
     localStatusEl.textContent = '⬇ Downloading the model…';
     downloadLocalEl.style.display = 'none';
   } else {
-    localStatusEl.textContent = '❌ Not supported on this device — the cloud fallback will be used.';
+    localStatusEl.textContent =
+      '❌ Not supported on this device — the cloud fallback will be used.';
     downloadLocalEl.style.display = 'none';
   }
 }
@@ -56,8 +59,7 @@ downloadLocalEl.addEventListener('click', async () => {
     const session = await LanguageModel.create({
       monitor(m) {
         m.addEventListener('downloadprogress', (e) => {
-          const frac = e && e.total ? e.loaded / e.total : e ? e.loaded : 0;
-          localStatusEl.textContent = `⬇ Downloading… ${Math.round((frac || 0) * 100)}%`;
+          localStatusEl.textContent = `⬇ Downloading… ${downloadProgressPercent(e)}%`;
         });
       },
     });
@@ -136,10 +138,13 @@ async function ensureEndpointPermission(endpoint: string): Promise<string | null
 function flashStatus(text: string, opts: { warn?: boolean } = {}): void {
   statusEl.textContent = text;
   statusEl.classList.toggle('warn', Boolean(opts.warn));
-  setTimeout(() => {
-    statusEl.textContent = '';
-    statusEl.classList.remove('warn');
-  }, opts.warn ? 6000 : 2000);
+  setTimeout(
+    () => {
+      statusEl.textContent = '';
+      statusEl.classList.remove('warn');
+    },
+    opts.warn ? 6000 : 2000,
+  );
 }
 
 // Load saved settings on open.

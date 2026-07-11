@@ -1,8 +1,8 @@
-import { createBubble, type Bubble } from '@/components/bubble';
+import { type Bubble, createBubble } from '@/components/bubble';
 import {
-  SUMMARIZE_PORT,
   type OpenOptionsMessage,
   type PortResponse,
+  SUMMARIZE_PORT,
   type SummarizeRequest,
 } from '@/utils/messaging';
 import { bubblePosition, type Point, type RectLike } from '@/utils/positioning';

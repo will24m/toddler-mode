@@ -1,9 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import {
-  MAX_SELECTION_LENGTH,
-  MIN_SELECTION_LENGTH,
-  parseSummarizeText,
-} from '@/utils/messaging';
+import { MAX_SELECTION_LENGTH, MIN_SELECTION_LENGTH, parseSummarizeText } from '@/utils/messaging';
 
 describe('parseSummarizeText', () => {
   it('returns the text for a well-formed request', () => {

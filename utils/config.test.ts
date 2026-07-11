@@ -1,11 +1,6 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 import { fakeBrowser } from 'wxt/testing';
-import {
-  PROVIDER_DEFAULTS,
-  isConfigComplete,
-  loadCloudConfig,
-  providerItem,
-} from '@/utils/config';
+import { isConfigComplete, loadCloudConfig, PROVIDER_DEFAULTS, providerItem } from '@/utils/config';
 
 describe('config', () => {
   beforeEach(() => {

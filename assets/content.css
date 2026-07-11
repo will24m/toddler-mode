@@ -20,7 +20,7 @@
   padding: 0;
   margin: 0;
   pointer-events: auto;
-  font-family: system-ui, -apple-system, 'Segoe UI', sans-serif;
+  font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
   transition: transform 0.08s ease;
 }
 .tm-icon:hover {
@@ -51,7 +51,7 @@
   border: 1px solid rgba(0, 0, 0, 0.1);
   border-radius: 14px;
   box-shadow: 0 8px 30px rgba(0, 0, 0, 0.22);
-  font-family: system-ui, -apple-system, 'Segoe UI', sans-serif;
+  font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
   pointer-events: auto;
   overflow: hidden;
   animation: tm-rise 0.18s ease-out;

@@ -1,3 +1,4 @@
+import { downloadProgressPercent } from '@/utils/download-progress';
 import { TODDLER_PROMPT } from '@/utils/prompt';
 import { createDeltaExtractor } from '@/utils/stream-delta';
 
@@ -37,8 +38,7 @@ export async function runLocalSummary(
       monitor(m) {
         m.addEventListener('downloadprogress', (e) => {
           if (!cb.isAlive()) return;
-          const frac = e && e.total ? e.loaded / e.total : e ? e.loaded : 0;
-          cb.onStatus(`Getting my brain ready… ${Math.round((frac || 0) * 100)}%`);
+          cb.onStatus(`Getting my brain ready… ${downloadProgressPercent(e)}%`);
         });
       },
       signal,

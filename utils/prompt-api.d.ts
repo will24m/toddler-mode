@@ -15,6 +15,7 @@ interface LanguageModelSession {
   destroy(): void;
 }
 
+// biome-ignore lint/complexity/noStaticOnlyClass: mirrors Chrome's real global, which IS a static-only class
 declare class LanguageModel {
   static availability(): Promise<LanguageModelAvailability>;
   static create(options?: {

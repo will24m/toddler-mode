@@ -28,7 +28,7 @@ describe('createBubble', () => {
     bubble.showError('second');
     const errors = bubble.root.querySelectorAll('.tm-error');
     expect(errors).toHaveLength(1);
-    expect(errors[0]!.textContent).toBe('Uh oh! second');
+    expect(errors[0]?.textContent).toBe('Uh oh! second');
     expect(bubble.getText()).toBe('partial text'); // streamed text is kept
   });
 

@@ -45,8 +45,7 @@ describe('parseOpenAILine', () => {
 
 describe('parseAnthropicLine', () => {
   it('extracts text_delta content', () => {
-    const line =
-      'data: {"type":"content_block_delta","delta":{"type":"text_delta","text":"yo"}}';
+    const line = 'data: {"type":"content_block_delta","delta":{"type":"text_delta","text":"yo"}}';
     expect(parseAnthropicLine(line)).toBe('yo');
   });
 

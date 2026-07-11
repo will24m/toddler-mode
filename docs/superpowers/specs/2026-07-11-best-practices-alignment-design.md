@@ -29,13 +29,16 @@ GitHub Actions on push/PR to `main` (and pushes to any branch): checkout,
 setup-node LTS with npm cache, `npm ci`, `npm test`, `npm run check`,
 `npm run lint`, `npm run build`. One job; the matrix isn't needed.
 
-### 2. Lint + format — ESLint (typescript-eslint) + Prettier
+### 2. Lint + format — Biome
 
-- Flat `eslint.config.js`: `@eslint/js` recommended + `typescript-eslint`
-  recommended, ignoring `.wxt/`, `.output/`, `node_modules/`.
-  `eslint-config-prettier` last so ESLint never fights the formatter.
-- `.prettierrc`: match the existing style — 100 columns, single quotes.
-- Scripts: `lint` (eslint + prettier --check), `format` (prettier --write).
+(Originally planned as ESLint + Prettier, but typescript-eslint's peer range
+caps at TypeScript <6.1 and this repo uses TypeScript 7. Biome parses TS
+natively with no peer dependency and covers linting *and* formatting.)
+
+- `biome.json`: recommended lint rules, 100-column single-quote formatting to
+  match the existing style, git-ignore integration so `.wxt/`/`.output/` are
+  skipped.
+- Scripts: `lint` (`biome check .`), `format` (`biome check --write .`).
 - Fix whatever the first run flags.
 
 ### 3. Manifest & background behavior

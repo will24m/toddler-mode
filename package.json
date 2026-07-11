@@ -9,10 +9,13 @@
     "build": "wxt build",
     "zip": "wxt zip",
     "check": "wxt prepare && tsc --noEmit",
+    "lint": "biome check .",
+    "format": "biome check --write .",
     "test": "vitest run --passWithNoTests",
     "postinstall": "wxt prepare"
   },
   "devDependencies": {
+    "@biomejs/biome": "^2.5.3",
     "happy-dom": "^20.10.6",
     "typescript": "^7.0.2",
     "vitest": "^4.1.10",

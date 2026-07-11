@@ -1,10 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import {
-  BUBBLE_WIDTH,
-  ICON_SIZE,
-  bubblePosition,
-  clampIconPosition,
-} from '@/utils/positioning';
+import { BUBBLE_WIDTH, bubblePosition, clampIconPosition, ICON_SIZE } from '@/utils/positioning';
 
 const vp = { width: 1000, height: 800 };
 
@@ -37,9 +32,7 @@ describe('bubblePosition', () => {
 
   it('clamps horizontally so the bubble stays in the viewport', () => {
     const rightRect = { left: 950, top: 200, right: 990, bottom: 220 };
-    expect(bubblePosition(rightRect, { x: 0, y: 0 }, 120, vp).x).toBe(
-      vp.width - BUBBLE_WIDTH - 10,
-    );
+    expect(bubblePosition(rightRect, { x: 0, y: 0 }, 120, vp).x).toBe(vp.width - BUBBLE_WIDTH - 10);
   });
 
   it('falls back to the anchor point when there is no rect', () => {

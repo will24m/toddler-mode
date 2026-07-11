@@ -1,6 +1,6 @@
 import { isConfigComplete, loadCloudConfig } from '@/utils/config';
 import { endpointOriginPattern, validateEndpoint } from '@/utils/endpoint';
-import { SUMMARIZE_PORT, parseSummarizeText, type PortResponse } from '@/utils/messaging';
+import { type PortResponse, parseSummarizeText, SUMMARIZE_PORT } from '@/utils/messaging';
 import { buildRequest } from '@/utils/providers';
 import { createSseLineSplitter } from '@/utils/sse';
 
@@ -68,11 +68,7 @@ function post(port: Port, message: PortResponse): void {
   }
 }
 
-async function runSummarize(
-  text: string,
-  port: Port,
-  controller: AbortController,
-): Promise<void> {
+async function runSummarize(text: string, port: Port, controller: AbortController): Promise<void> {
   // Config (including the API key) is loaded HERE — it never transits the
   // content script or the port.
   const config = await loadCloudConfig();
