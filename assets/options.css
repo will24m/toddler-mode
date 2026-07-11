@@ -83,6 +83,9 @@ button#save:hover {
   font-size: 14px;
   font-weight: 600;
 }
+#status.warn {
+  color: #b00020;
+}
 .key-row {
   display: flex;
   gap: 8px;

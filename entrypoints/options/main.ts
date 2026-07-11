@@ -7,6 +7,7 @@ import {
   providerItem,
   type Provider,
 } from '@/utils/config';
+import { endpointOriginPattern, validateEndpoint } from '@/utils/endpoint';
 
 const providerEl = document.getElementById('provider') as HTMLSelectElement;
 const endpointEl = document.getElementById('endpoint') as HTMLInputElement;
@@ -87,21 +88,56 @@ toggleKeyEl.addEventListener('click', () => {
 });
 
 saveEl.addEventListener('click', async () => {
+  const endpoint = endpointEl.value.trim();
+
+  if (endpoint) {
+    const problem = validateEndpoint(endpoint);
+    if (problem) {
+      flashStatus(problem, { warn: true });
+      return;
+    }
+  }
+
+  // Custom endpoints need a host permission the manifest doesn't grant.
+  // Requesting here keeps the install-time grants down to the two default
+  // provider origins — and this click is the user gesture the request needs.
+  const permissionWarning = endpoint ? await ensureEndpointPermission(endpoint) : null;
+
   // Provider/endpoint/model are fine to sync; the key stays local only.
   await Promise.all([
     providerItem.setValue(providerEl.value as Provider),
-    endpointItem.setValue(endpointEl.value.trim()),
+    endpointItem.setValue(endpoint),
     modelItem.setValue(modelEl.value.trim()),
     apiKeyItem.setValue(apiKeyEl.value.trim()),
   ]);
-  flashStatus('Saved! 🎉');
+  if (permissionWarning) {
+    flashStatus(permissionWarning, { warn: true });
+  } else {
+    flashStatus('Saved! 🎉');
+  }
 });
 
-function flashStatus(text: string): void {
+// Returns a warning message if the endpoint's origin could not be granted.
+async function ensureEndpointPermission(endpoint: string): Promise<string | null> {
+  const origin = endpointOriginPattern(endpoint);
+  if (!origin) return null; // validateEndpoint already vouched for the URL
+  try {
+    if (await browser.permissions.contains({ origins: [origin] })) return null;
+    const granted = await browser.permissions.request({ origins: [origin] });
+    if (granted) return null;
+  } catch {
+    // Fall through — e.g. the origin isn't coverable by optional_host_permissions.
+  }
+  return `Saved, but without permission to reach ${origin} the cloud fallback won't work.`;
+}
+
+function flashStatus(text: string, opts: { warn?: boolean } = {}): void {
   statusEl.textContent = text;
+  statusEl.classList.toggle('warn', Boolean(opts.warn));
   setTimeout(() => {
     statusEl.textContent = '';
-  }, 2000);
+    statusEl.classList.remove('warn');
+  }, opts.warn ? 6000 : 2000);
 }
 
 // Load saved settings on open.
