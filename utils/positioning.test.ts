@@ -50,4 +50,11 @@ describe('bubblePosition', () => {
     const lowRect = { left: 100, top: 700, right: 400, bottom: 780 };
     expect(bubblePosition(lowRect, { x: 0, y: 0 }, 0, vp).y).toBe(572);
   });
+
+  it('never pushes the bubble off-screen on viewports narrower than the bubble', () => {
+    // CSS caps the rendered width at 100vw - 20px, so the clamp must use the
+    // effective width, not the 300px constant.
+    const narrow = { width: 280, height: 800 };
+    expect(bubblePosition(rect, { x: 0, y: 0 }, 120, narrow).x).toBe(10);
+  });
 });

@@ -46,6 +46,10 @@ describe('endpointOriginPattern', () => {
     );
   });
 
+  it('keeps IPv6 hosts bracketed, matching the manifest pattern syntax', () => {
+    expect(endpointOriginPattern('http://[::1]:8080/v1')).toBe('http://[::1]/*');
+  });
+
   it('returns null for unparseable URLs', () => {
     expect(endpointOriginPattern('not a url')).toBeNull();
     expect(endpointOriginPattern('')).toBeNull();

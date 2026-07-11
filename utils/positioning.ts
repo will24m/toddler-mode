@@ -41,6 +41,10 @@ export function bubblePosition(
 ): Point {
   const h = bubbleHeight || FALLBACK_BUBBLE_HEIGHT;
 
+  // The CSS caps the rendered width at 100vw - 20px, so clamp against the
+  // width the bubble will actually have on this viewport.
+  const w = Math.min(BUBBLE_WIDTH, vp.width - 2 * BUBBLE_MARGIN);
+
   let left = rect ? rect.left : anchor.x;
   let top = rect ? rect.bottom + GAP : anchor.y;
 
@@ -48,7 +52,7 @@ export function bubblePosition(
   if (rect && top + h > vp.height - BUBBLE_MARGIN) {
     top = Math.max(BUBBLE_MARGIN, rect.top - h - GAP);
   }
-  left = Math.min(Math.max(BUBBLE_MARGIN, left), vp.width - BUBBLE_WIDTH - BUBBLE_MARGIN);
+  left = Math.min(Math.max(BUBBLE_MARGIN, left), vp.width - w - BUBBLE_MARGIN);
   top = Math.min(Math.max(BUBBLE_MARGIN, top), vp.height - h - BUBBLE_MARGIN);
 
   return { x: left, y: top };

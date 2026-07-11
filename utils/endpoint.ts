@@ -17,7 +17,8 @@ export function validateEndpoint(url: string): string | null {
     return 'The endpoint URL must not contain credentials — put the API key in the key field.';
   }
   if (parsed.protocol === 'https:') return null;
-  if (parsed.protocol === 'http:' && LOOPBACK_HOSTS.has(parsed.hostname === '::1' ? '[::1]' : parsed.hostname)) {
+  // URL.hostname keeps IPv6 brackets: new URL('http://[::1]/').hostname === '[::1]'.
+  if (parsed.protocol === 'http:' && LOOPBACK_HOSTS.has(parsed.hostname)) {
     return null;
   }
   if (parsed.protocol === 'http:') {

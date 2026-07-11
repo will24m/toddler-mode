@@ -10,7 +10,13 @@ export default defineConfig({
     // endpoints request their specific origin from the options page at
     // save-time (see optional_host_permissions).
     host_permissions: ['https://api.openai.com/*', 'https://api.anthropic.com/*'],
-    optional_host_permissions: ['https://*/*', 'http://localhost/*', 'http://127.0.0.1/*'],
+    // The http entries must cover every loopback host validateEndpoint accepts.
+    optional_host_permissions: [
+      'https://*/*',
+      'http://localhost/*',
+      'http://127.0.0.1/*',
+      'http://[::1]/*',
+    ],
     action: { default_title: 'Toddler Mode' },
     icons: {
       16: 'icon/16.png',
