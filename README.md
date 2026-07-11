@@ -25,21 +25,41 @@ download the model with one click.
 highlight text  →  🧸 icon appears  →  click it  →  floating bubble streams a toddler summary
 ```
 
-- **content.js** — detects the selection, shows the icon and the floating bubble (isolated
-  in a Shadow DOM so page styles can't break it). Runs the **on-device Gemini Nano** path
+- **entrypoints/content/** — detects the selection (mouse and keyboard), shows the icon and
+  the floating bubble (isolated in a Shadow DOM). Runs the **on-device Gemini Nano** path
   here (the Prompt API can't run in a service worker), and falls back to the cloud port.
-- **background.js** — the service worker. Handles the **cloud fallback**: it makes the
-  streaming API call (content scripts can't, due to CORS) and pushes tokens back over a
-  long-lived port. Handles both OpenAI-compatible and Anthropic SSE formats.
-- **options.html / options.js** — on-device status + one-click model setup, plus the cloud
+- **entrypoints/background.ts** — the service worker. Owns the cloud config **and the API
+  key** (the content script only ever sends the selected text), makes the streaming API
+  call, aborts it if the stream stalls for 20s, and pushes tokens back over a long-lived
+  port. Handles both OpenAI-compatible and Anthropic SSE formats.
+- **entrypoints/options/** — on-device status + one-click model setup, plus the cloud
   fallback settings (provider, endpoint, API key, model).
+- **utils/** — pure, unit-tested modules: the toddler prompt, config store, SSE parsing,
+  streaming delta math, positioning math, and the typed messaging protocol.
+- **components/** — vanilla DOM builders for the icon and bubble.
+- **assets/** — the CSS for the bubble and the options page.
 
-## Install (load unpacked)
+Built with [WXT](https://wxt.dev) on its canonical flat project structure. The
+`composables/` (Vue) and `hooks/` (React/Solid) directories are intentionally absent —
+this project is vanilla TypeScript. `modules/` and `app.config.ts` appear when needed.
 
-1. Generate the icons (one time): `python3 gen_icons.py`
+## Develop
+
+```bash
+npm install        # also runs `wxt prepare`
+npm run dev        # launches Chrome with the extension + HMR
+npm test           # Vitest unit tests
+npm run check      # TypeScript (tsc --noEmit)
+npm run build      # production build into .output/chrome-mv3
+npm run zip        # store-ready zip
+```
+
+## Install (from a build)
+
+1. `npm install && npm run build`
 2. Open `chrome://extensions` (or `edge://extensions`).
 3. Turn on **Developer mode** (top-right).
-4. Click **Load unpacked** and select this folder.
+4. Click **Load unpacked** and select `.output/chrome-mv3/`.
 
 ## Configure
 
@@ -55,22 +75,22 @@ Details → Extension options).
   - Anthropic default: `https://api.anthropic.com/v1/messages`, model `claude-haiku-4-5`
   - Custom: any OpenAI-compatible endpoint.
 
-Your API key is stored in `chrome.storage.local` (this device only, never synced).
-Provider / endpoint / model sync across your signed-in browsers.
+Your API key is stored in `chrome.storage.local` (this device only, never synced) and is
+only ever read by the background service worker. Provider / endpoint / model sync across
+your signed-in browsers.
 
 ## Use
 
-Highlight some text → click the 🧸 → read the bubble. Press `Esc`, click the ✕, or click
-elsewhere to close it.
+Highlight some text (mouse, or Shift+arrows / Ctrl-A) → click the 🧸 → read the bubble.
+Press `Esc`, click the ✕, or click elsewhere to close it. The bubble stays anchored to
+your selection while you scroll.
 
 ## Tweak the voice
 
-The toddler personality is the `TODDLER_PROMPT` string. It appears in both
-[content.js](content.js) (on-device path) and [background.js](background.js) (cloud path) —
-edit both to keep them in sync.
+The toddler personality is the `TODDLER_PROMPT` string in
+[utils/prompt.ts](utils/prompt.ts) — one place, used by both the on-device and cloud paths.
 
 ## Notes
 
-- No build step, no npm, no dependencies — plain files loaded directly.
-- The icons are simple generated placeholders; swap in your own `icons/icon{16,48,128}.png`
-  anytime.
+- The icons are generated placeholders (`python3 gen_icons.py` regenerates them into
+  `public/icon/`); swap in your own PNGs anytime.
