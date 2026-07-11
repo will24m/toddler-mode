@@ -46,10 +46,10 @@ def make_png(path, size):
 
 def main():
     here = os.path.dirname(os.path.abspath(__file__))
-    icons = os.path.join(here, "icons")
+    icons = os.path.join(here, "public", "icon")
     os.makedirs(icons, exist_ok=True)
     for s in (16, 48, 128):
-        make_png(os.path.join(icons, f"icon{s}.png"), s)
+        make_png(os.path.join(icons, f"{s}.png"), s)
 
 
 if __name__ == "__main__":

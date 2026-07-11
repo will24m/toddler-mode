@@ -1,0 +1,229 @@
+:host {
+  all: initial;
+}
+
+.tm-icon {
+  position: fixed;
+  z-index: 2147483647;
+  width: 30px;
+  height: 30px;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  font-size: 16px;
+  line-height: 1;
+  background: #ffffff;
+  border: 1px solid rgba(0, 0, 0, 0.12);
+  border-radius: 50%;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.18);
+  cursor: pointer;
+  padding: 0;
+  margin: 0;
+  pointer-events: auto;
+  font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+  transition: transform 0.08s ease;
+}
+.tm-icon:hover {
+  transform: scale(1.1);
+}
+/* display:none -> flex re-triggers the animation on every show */
+.tm-icon {
+  animation: tm-pop 0.16s ease-out;
+}
+@keyframes tm-pop {
+  from {
+    opacity: 0;
+    transform: scale(0.6);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.tm-bubble {
+  position: fixed;
+  z-index: 2147483647;
+  width: 300px;
+  max-width: calc(100vw - 20px);
+  background: #ffffff;
+  color: #1b1b1b;
+  border: 1px solid rgba(0, 0, 0, 0.1);
+  border-radius: 14px;
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.22);
+  font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+  pointer-events: auto;
+  overflow: hidden;
+  animation: tm-rise 0.18s ease-out;
+}
+@keyframes tm-rise {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.tm-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 12px;
+  background: linear-gradient(135deg, #ffd56b, #ff9a6b);
+  color: #4a2c00;
+  font-weight: 700;
+  font-size: 13px;
+}
+.tm-title {
+  user-select: none;
+}
+.tm-header-btns {
+  display: flex;
+  gap: 6px;
+}
+.tm-close,
+.tm-copy {
+  background: rgba(255, 255, 255, 0.4);
+  border: none;
+  border-radius: 50%;
+  width: 20px;
+  height: 20px;
+  cursor: pointer;
+  font-size: 12px;
+  line-height: 1;
+  color: #4a2c00;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+}
+.tm-close:hover,
+.tm-copy:hover {
+  background: rgba(255, 255, 255, 0.75);
+}
+
+.tm-body {
+  padding: 14px;
+}
+.tm-status {
+  font-size: 13px;
+  color: #777;
+  margin-bottom: 6px;
+}
+.tm-status:empty {
+  margin: 0;
+}
+.tm-text {
+  font-size: 16px;
+  line-height: 1.5;
+  white-space: pre-wrap;
+  word-wrap: break-word;
+}
+.tm-error {
+  margin-top: 8px;
+  color: #b00020;
+  font-size: 14px;
+}
+
+.tm-setup-btn,
+.tm-retry-btn {
+  margin-top: 10px;
+  background: #ff9a6b;
+  color: #ffffff;
+  border: none;
+  padding: 8px 14px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 600;
+}
+.tm-setup-btn:hover,
+.tm-retry-btn:hover {
+  background: #ff8654;
+}
+.tm-retry-btn {
+  display: block;
+  padding: 6px 12px;
+  font-size: 13px;
+}
+
+.tm-loading {
+  display: flex;
+  gap: 5px;
+  padding: 4px 0;
+}
+.tm-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #ff9a6b;
+  animation: tm-blink 1s infinite ease-in-out;
+}
+.tm-dot:nth-child(2) {
+  animation-delay: 0.2s;
+}
+.tm-dot:nth-child(3) {
+  animation-delay: 0.4s;
+}
+@keyframes tm-blink {
+  0%,
+  100% {
+    opacity: 0.3;
+    transform: translateY(0);
+  }
+  50% {
+    opacity: 1;
+    transform: translateY(-3px);
+  }
+}
+
+/* Follow the OS theme so the bubble isn't a white flashbang on dark pages.
+   The warm header gradient is the brand and stays in both themes. */
+@media (prefers-color-scheme: dark) {
+  .tm-icon {
+    background: #2e2e33;
+    border-color: rgba(255, 255, 255, 0.16);
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.5);
+  }
+  .tm-bubble {
+    background: #26262b;
+    color: #ececec;
+    border-color: rgba(255, 255, 255, 0.12);
+    box-shadow: 0 8px 30px rgba(0, 0, 0, 0.55);
+  }
+  .tm-status {
+    color: #a5a5a5;
+  }
+  .tm-error {
+    color: #ff8a95;
+  }
+}
+
+/* Calmer for users who ask for less motion: no entrances, no bouncing —
+   the dots still pulse opacity so "loading" stays legible. */
+@media (prefers-reduced-motion: reduce) {
+  .tm-icon,
+  .tm-bubble {
+    animation: none;
+  }
+  .tm-icon,
+  .tm-icon:hover {
+    transition: none;
+    transform: none;
+  }
+  .tm-dot {
+    animation-name: tm-blink-soft;
+  }
+  @keyframes tm-blink-soft {
+    0%,
+    100% {
+      opacity: 0.3;
+    }
+    50% {
+      opacity: 1;
+    }
+  }
+}
