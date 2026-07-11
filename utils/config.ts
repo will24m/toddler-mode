@@ -29,6 +29,9 @@ export const providerItem = storage.defineItem<Provider>('sync:provider', { fall
 export const endpointItem = storage.defineItem<string>('sync:endpoint', { fallback: '' });
 export const modelItem = storage.defineItem<string>('sync:model', { fallback: '' });
 export const apiKeyItem = storage.defineItem<string>('local:apiKey', { fallback: '' });
+// Quiet mode: when false, the selection icon never appears — the context
+// menu and keyboard shortcut become the triggers.
+export const showIconItem = storage.defineItem<boolean>('sync:showIcon', { fallback: true });
 
 export async function loadCloudConfig(): Promise<CloudConfig> {
   const [provider, endpoint, model, apiKey] = await Promise.all([

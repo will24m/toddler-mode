@@ -1,6 +1,7 @@
 export interface Bubble {
   root: HTMLDivElement;
   setStatus(text: string): void;
+  setNote(text: string): void;
   hideLoading(): void;
   appendText(delta: string): void;
   setText(text: string): void;
@@ -49,9 +50,13 @@ export function createBubble(onClose: () => void): Bubble {
   loading.appendChild(el('span', 'tm-dot'));
   const status = el('div', 'tm-status');
   status.setAttribute('role', 'status');
+  // Unlike the transient status line, the note persists for the bubble's
+  // lifetime (e.g. "I read the first part!").
+  const note = el('div', 'tm-note');
   const textEl = el('div', 'tm-text');
   body.appendChild(loading);
   body.appendChild(status);
+  body.appendChild(note);
   body.appendChild(textEl);
 
   root.appendChild(header);
@@ -84,6 +89,9 @@ export function createBubble(onClose: () => void): Bubble {
     root,
     setStatus(text) {
       status.textContent = text;
+    },
+    setNote(text) {
+      note.textContent = text;
     },
     hideLoading() {
       loading.style.display = 'none';

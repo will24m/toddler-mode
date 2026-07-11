@@ -8,7 +8,13 @@ export default defineConfig({
     // The floor we actually test against. The on-device Gemini Nano path
     // additionally wants Chrome 138+ and is feature-detected at runtime.
     minimum_chrome_version: '116',
-    permissions: ['storage'],
+    permissions: ['storage', 'contextMenus'],
+    commands: {
+      'summarize-selection': {
+        suggested_key: { default: 'Alt+Shift+T' },
+        description: 'Summarize the selected text',
+      },
+    },
     // Only the two default provider origins are granted at install. Custom
     // endpoints request their specific origin from the options page at
     // save-time (see optional_host_permissions).

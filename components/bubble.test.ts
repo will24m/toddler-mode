@@ -99,6 +99,15 @@ describe('createBubble', () => {
     expect(e.defaultPrevented).toBe(true);
   });
 
+  it('shows a persistent note that survives status changes', () => {
+    const bubble = createBubble(() => {});
+    bubble.setNote('I read the first part!');
+    bubble.setStatus('working…');
+    bubble.setStatus('');
+    const note = bubble.root.querySelector('.tm-note') as HTMLElement;
+    expect(note.textContent).toBe('I read the first part!');
+  });
+
   it('is announced as a dialog with labelled controls', () => {
     const bubble = createBubble(() => {});
     expect(bubble.root.getAttribute('role')).toBe('dialog');

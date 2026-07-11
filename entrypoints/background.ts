@@ -1,20 +1,42 @@
+import { streamCloudSummary } from '@/utils/cloud-stream';
 import { isConfigComplete, loadCloudConfig } from '@/utils/config';
 import { endpointOriginPattern, validateEndpoint } from '@/utils/endpoint';
 import { type PortResponse, parseSummarizeText, SUMMARIZE_PORT } from '@/utils/messaging';
 import { buildRequest } from '@/utils/providers';
-import { createSseLineSplitter } from '@/utils/sse';
 
 // Abort the fetch if no bytes arrive for this long — a stalled stream would
 // otherwise leave the bubble's loading dots bouncing forever.
 const STALL_TIMEOUT_MS = 20_000;
 
+const MENU_ID = 'tm-summarize';
+
 type Port = ReturnType<typeof browser.runtime.connect>;
 
 export default defineBackground(() => {
-  // One-time onboarding: the options page explains on-device AI status and
-  // the optional cloud setup. Fresh installs only — never on update.
   browser.runtime.onInstalled.addListener((details) => {
+    // One-time onboarding: the options page explains on-device AI status and
+    // the optional cloud setup. Fresh installs only — never on update.
     if (details.reason === 'install') browser.runtime.openOptionsPage();
+
+    // Right-click alternative to the selection icon (also the only trigger
+    // when the icon is disabled in settings).
+    browser.contextMenus.removeAll().then(() => {
+      browser.contextMenus.create({
+        id: MENU_ID,
+        title: '🧸 Explain like I’m a toddler',
+        contexts: ['selection'],
+      });
+    });
+  });
+
+  browser.contextMenus.onClicked.addListener((info, tab) => {
+    if (info.menuItemId === MENU_ID && tab?.id != null) triggerSummarize(tab.id);
+  });
+
+  browser.commands.onCommand.addListener(async (command) => {
+    if (command !== 'summarize-selection') return;
+    const [tab] = await browser.tabs.query({ active: true, currentWindow: true });
+    if (tab?.id != null) triggerSummarize(tab.id);
   });
 
   // The action has no popup, so make the toolbar button do the obvious
@@ -59,6 +81,12 @@ export default defineBackground(() => {
     });
   });
 });
+
+function triggerSummarize(tabId: number): void {
+  // Rejects on pages without our content script (chrome://, the store) —
+  // there's nothing to summarize there anyway.
+  browser.tabs.sendMessage(tabId, { type: 'trigger-summarize' }).catch(() => {});
+}
 
 function post(port: Port, message: PortResponse): void {
   try {
@@ -120,39 +148,15 @@ async function runSummarize(text: string, port: Port, controller: AbortControlle
   };
 
   try {
-    const res = await fetch(request.url, {
-      method: 'POST',
-      headers: request.headers,
-      body: JSON.stringify(request.body),
-      signal: controller.signal,
-      // The API key rides in a header; never let it follow a redirect to a
-      // different origin. The supported APIs don't redirect anyway.
-      redirect: 'error',
-    });
-
-    if (!res.ok) {
-      const errText = await safeReadText(res);
-      throw new Error(`API ${res.status} — ${truncate(errText, 300) || 'request failed'}`);
-    }
-    if (!res.body) throw new Error('No response stream from the API.');
-
-    const splitter = createSseLineSplitter((line) => {
-      const token = request.parseLine(line);
-      if (!token) return;
-      tokenBuffer += token;
-      if (flushTimer === null) flushTimer = setTimeout(flushTokens, 15);
-    });
-
-    const reader = res.body.getReader();
-    const decoder = new TextDecoder();
-    while (true) {
-      const { done, value } = await reader.read();
-      if (done) break;
-      poke();
-      splitter.push(decoder.decode(value, { stream: true }));
-    }
-    splitter.push(decoder.decode());
-    splitter.flush();
+    await streamCloudSummary(
+      request,
+      controller.signal,
+      (token) => {
+        tokenBuffer += token;
+        if (flushTimer === null) flushTimer = setTimeout(flushTokens, 15);
+      },
+      { onActivity: poke },
+    );
 
     flushTokens();
     post(port, { type: 'done' });
@@ -164,18 +168,6 @@ async function runSummarize(text: string, port: Port, controller: AbortControlle
     flushTokens();
     clearTimeout(stallTimer);
   }
-}
-
-async function safeReadText(res: Response): Promise<string> {
-  try {
-    return await res.text();
-  } catch {
-    return '';
-  }
-}
-
-function truncate(s: string, n: number): string {
-  return s.length > n ? `${s.slice(0, n)}…` : s;
 }
 
 function errToMessage(err: unknown): string {

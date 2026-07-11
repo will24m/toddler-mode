@@ -116,6 +116,15 @@
 .tm-status:empty {
   margin: 0;
 }
+.tm-note {
+  font-size: 12px;
+  font-style: italic;
+  color: #8a6d3b;
+  margin-bottom: 6px;
+}
+.tm-note:empty {
+  margin: 0;
+}
 .tm-text {
   font-size: 16px;
   line-height: 1.5;
@@ -196,6 +205,9 @@
   }
   .tm-status {
     color: #a5a5a5;
+  }
+  .tm-note {
+    color: #d4b478;
   }
   .tm-error {
     color: #ff8a95;

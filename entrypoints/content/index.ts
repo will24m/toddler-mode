@@ -1,5 +1,6 @@
 import '@/assets/content.css';
 import { createIcon } from '@/components/icon';
+import { showIconItem } from '@/utils/config';
 import { MAX_SELECTION_LENGTH, MIN_SELECTION_LENGTH } from '@/utils/messaging';
 import { clampIconPosition, type Point, type RectLike } from '@/utils/positioning';
 import { SummarySession } from './session';
@@ -26,7 +27,16 @@ export default defineContentScript({
     let uiContainer: HTMLElement | null = null;
     let session: SummarySession | null = null;
     let lastText = '';
+    let lastTruncated = false;
     let lastAnchor: Point = { x: 100, y: 100 };
+
+    // Quiet mode: with the icon disabled, the context menu and keyboard
+    // shortcut are the triggers.
+    let iconEnabled = await showIconItem.getValue();
+    showIconItem.watch((value) => {
+      iconEnabled = value;
+      if (!value) hideIcon();
+    });
 
     const ui = await createShadowRootUi(ctx, {
       name: 'toddler-mode-ui',
@@ -74,19 +84,27 @@ export default defineContentScript({
       if (icon) icon.style.display = 'none';
     }
 
-    function handleSelection(e?: MouseEvent): void {
+    // Reads the live selection into lastText/lastAnchor. Returns false when
+    // there's nothing (long enough) selected.
+    function captureSelection(e?: MouseEvent): boolean {
       const sel = window.getSelection();
       const text = sel ? sel.toString().trim() : '';
-      if (!text || text.length < MIN_SELECTION_LENGTH) {
-        hideIcon();
-        return;
-      }
+      if (!text || text.length < MIN_SELECTION_LENGTH) return false;
       lastText = text.slice(0, MAX_SELECTION_LENGTH);
+      lastTruncated = text.length > MAX_SELECTION_LENGTH;
       const rect = currentRect();
       const x = e ? e.clientX + 6 : rect ? rect.right + 6 : 100;
       const y = e ? e.clientY + 6 : rect ? rect.top : 100;
       lastAnchor = { x, y };
-      showIcon(x, y);
+      return true;
+    }
+
+    function handleSelection(e?: MouseEvent): void {
+      if (!captureSelection(e)) {
+        hideIcon();
+        return;
+      }
+      if (iconEnabled) showIcon(lastAnchor.x, lastAnchor.y);
     }
 
     function openBubble(): void {
@@ -96,6 +114,7 @@ export default defineContentScript({
       session = new SummarySession({
         container: uiContainer,
         text: lastText,
+        truncated: lastTruncated,
         getRect: currentRect,
         anchor: lastAnchor,
         requestClose: closeSession,
@@ -129,6 +148,13 @@ export default defineContentScript({
 
     ctx.addEventListener(document, 'keydown', (e) => {
       if (e.key === 'Escape') closeSession();
+    });
+
+    // Context-menu item or keyboard shortcut (relayed by the background) —
+    // the selection is still live at this point.
+    browser.runtime.onMessage.addListener((msg: unknown) => {
+      if ((msg as { type?: string })?.type !== 'trigger-summarize') return;
+      if (captureSelection()) openBubble();
     });
 
     // Scroll: hide the icon; the open bubble repositions itself via its own

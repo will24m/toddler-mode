@@ -7,15 +7,19 @@ import {
   PROVIDER_DEFAULTS,
   type Provider,
   providerItem,
+  showIconItem,
 } from '@/utils/config';
 import { downloadProgressPercent } from '@/utils/download-progress';
 import { endpointOriginPattern, validateEndpoint } from '@/utils/endpoint';
+import { type PortResponse, SUMMARIZE_PORT } from '@/utils/messaging';
 
 const providerEl = document.getElementById('provider') as HTMLSelectElement;
 const endpointEl = document.getElementById('endpoint') as HTMLInputElement;
 const apiKeyEl = document.getElementById('apiKey') as HTMLInputElement;
 const modelEl = document.getElementById('model') as HTMLInputElement;
 const saveEl = document.getElementById('save') as HTMLButtonElement;
+const saveTestEl = document.getElementById('saveTest') as HTMLButtonElement;
+const showIconEl = document.getElementById('showIcon') as HTMLInputElement;
 const statusEl = document.getElementById('status') as HTMLSpanElement;
 const toggleKeyEl = document.getElementById('toggleKey') as HTMLButtonElement;
 const localStatusEl = document.getElementById('localStatus') as HTMLDivElement;
@@ -90,14 +94,16 @@ toggleKeyEl.addEventListener('click', () => {
   toggleKeyEl.textContent = showing ? 'Show' : 'Hide';
 });
 
-saveEl.addEventListener('click', async () => {
+// Saves everything; returns false when validation blocked the save.
+// `quiet` suppresses the success flash (Save & test shows its own status).
+async function doSave(quiet = false): Promise<boolean> {
   const endpoint = endpointEl.value.trim();
 
   if (endpoint) {
     const problem = validateEndpoint(endpoint);
     if (problem) {
       flashStatus(problem, { warn: true });
-      return;
+      return false;
     }
   }
 
@@ -112,11 +118,60 @@ saveEl.addEventListener('click', async () => {
     endpointItem.setValue(endpoint),
     modelItem.setValue(modelEl.value.trim()),
     apiKeyItem.setValue(apiKeyEl.value.trim()),
+    showIconItem.setValue(showIconEl.checked),
   ]);
   if (permissionWarning) {
     flashStatus(permissionWarning, { warn: true });
-  } else {
+  } else if (!quiet) {
     flashStatus('Saved! 🎉');
+  }
+  return true;
+}
+
+saveEl.addEventListener('click', () => void doSave());
+
+// Save, then exercise the real summarize path end to end — port, config,
+// permission check, provider request, streaming — with a tiny prompt.
+saveTestEl.addEventListener('click', async () => {
+  if (!(await doSave(true))) return;
+  testConnection();
+});
+
+const TEST_TIMEOUT_MS = 30_000;
+function testConnection(): void {
+  statusEl.classList.remove('warn');
+  statusEl.textContent = 'Testing… 🧪';
+  const port = browser.runtime.connect({ name: SUMMARIZE_PORT });
+  let settled = false;
+  const timer = setTimeout(() => {
+    finish('No answer after 30 seconds — check the endpoint and key.', true);
+  }, TEST_TIMEOUT_MS);
+  function finish(message: string, warn: boolean): void {
+    if (settled) return;
+    settled = true;
+    clearTimeout(timer);
+    try {
+      port.disconnect();
+    } catch {
+      // already gone
+    }
+    flashStatus(message, { warn });
+  }
+  port.onMessage.addListener((raw: unknown) => {
+    const msg = raw as PortResponse;
+    if (msg.type === 'chunk' || msg.type === 'done') finish('It works! 🎉', false);
+    else if (msg.type === 'not-configured') finish('Fill in endpoint, model, and API key first.', true);
+    else if (msg.type === 'error') finish(msg.message, true);
+  });
+  port.postMessage({ type: 'summarize', text: 'Say hello in a few short words.' });
+}
+
+// Enter in any text field saves — the form-iest thing a form can do.
+document.addEventListener('keydown', (e) => {
+  const target = e.target as HTMLElement | null;
+  if (e.key === 'Enter' && target instanceof HTMLInputElement && target.type !== 'checkbox') {
+    e.preventDefault();
+    void doSave();
   }
 });
 
@@ -149,12 +204,16 @@ function flashStatus(text: string, opts: { warn?: boolean } = {}): void {
 
 // Load saved settings on open.
 async function load(): Promise<void> {
-  const { provider, endpoint, model, apiKey } = await loadCloudConfig();
+  const [{ provider, endpoint, model, apiKey }, showIcon] = await Promise.all([
+    loadCloudConfig(),
+    showIconItem.getValue(),
+  ]);
   providerEl.value = provider;
   const d = PROVIDER_DEFAULTS[provider] ?? PROVIDER_DEFAULTS.custom;
   endpointEl.value = endpoint || d.endpoint;
   modelEl.value = model || d.model;
   apiKeyEl.value = apiKey;
+  showIconEl.checked = showIcon;
 }
 
 void load();

@@ -13,6 +13,7 @@ type Port = ReturnType<typeof browser.runtime.connect>;
 export interface SessionDeps {
   container: HTMLElement; // shadow-root UI container to append the bubble into
   text: string; // the selected text to summarize
+  truncated: boolean; // the selection was longer than the max and got cut
   getRect(): RectLike | null; // live selection rect (viewport-relative)
   anchor: Point; // fallback position when the selection rect is gone
   requestClose(): void; // asks the owner to destroy this session
@@ -37,6 +38,9 @@ export class SummarySession {
 
   async start(): Promise<void> {
     this.deps.container.appendChild(this.bubble.root);
+    if (this.deps.truncated) {
+      this.bubble.setNote('That was a LOT of words — I read the first part!');
+    }
     this.reposition();
     this.attachViewportListeners();
 
@@ -107,7 +111,14 @@ export class SummarySession {
     let gotFirst = false;
 
     this.port?.disconnect();
-    this.port = browser.runtime.connect({ name: SUMMARIZE_PORT });
+    try {
+      this.port = browser.runtime.connect({ name: SUMMARIZE_PORT });
+    } catch {
+      // Extension was updated/reloaded; this orphaned content script can't
+      // reconnect. Retrying can't succeed, so no retry button.
+      this.bubble.showError('Toddler Mode was updated — reload the page and try again.');
+      return;
+    }
 
     this.port.onMessage.addListener((raw: unknown) => {
       if (this.destroyed) return;
