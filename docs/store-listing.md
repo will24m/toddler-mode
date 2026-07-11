@@ -15,12 +15,12 @@ real page and of the options page work well).
 ## Permission justifications
 
 | Permission | Justification to paste |
-|---|---|
+| --- | --- |
 | `storage` | Stores the user's own settings: AI provider choice, endpoint URL, and model name (sync storage), and the user's own API key (local storage only, never synced). Nothing else is stored. |
 | Content script on `<all_urls>` | The extension's single purpose is to summarize text the user highlights on any page they are reading. The content script only watches for the user's own selection and draws the icon/bubble UI; it reads no page content beyond the text the user actively highlights. |
 | `https://api.openai.com/*` | Default cloud endpoint: the highlighted text is sent to OpenAI's chat completions API with the user's own API key, only when the user clicks the extension's icon and only if on-device AI is unavailable. |
 | `https://api.anthropic.com/*` | Same as above for the Anthropic API, the other built-in provider option. |
-| Optional: `https://*/*`, `http://localhost/*`, `http://127.0.0.1/*` | Users may point the cloud fallback at their own OpenAI-compatible endpoint (e.g. a self-hosted LLM such as Ollama on localhost). The specific origin is requested at the moment the user saves that endpoint in the options page; nothing is requested for users of the built-in providers. |
+| Optional: `https://*/*`, `http://localhost/*`, `http://127.0.0.1/*`, `http://[::1]/*` | Users may point the cloud fallback at their own OpenAI-compatible endpoint (e.g. a self-hosted LLM such as Ollama on localhost, including its IPv6 loopback). The specific origin is requested at the moment the user saves that endpoint in the options page; nothing is requested for users of the built-in providers. |
 
 ## Data usage disclosures (Privacy practices tab)
 
@@ -51,9 +51,9 @@ fetched content as code.
 > tabs.
 >
 > • Private by default: uses Chrome's built-in on-device AI (Gemini Nano) when
->   available — no account, no API key, nothing sent to any server.
+> available — no account, no API key, nothing sent to any server.
 > • Optional cloud fallback: plug in your own OpenAI, Anthropic, or
->   OpenAI-compatible endpoint and key for devices without on-device AI.
+> OpenAI-compatible endpoint and key for devices without on-device AI.
 > • No tracking, no analytics, no data collection. Ever. Open source.
 
 - Category: **Tools** (or **Accessibility**)
