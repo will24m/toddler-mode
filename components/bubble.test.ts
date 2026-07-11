@@ -76,6 +76,21 @@ describe('createBubble', () => {
     expect(bubble.root.querySelector('.tm-retry-btn')).toBeNull();
   });
 
+  it('hides the copy button until there is text to copy', () => {
+    const bubble = createBubble(() => {});
+    const btn = bubble.root.querySelector('.tm-copy') as HTMLButtonElement;
+    expect(btn.style.display).toBe('none');
+    bubble.appendText('words');
+    expect(btn.style.display).not.toBe('none');
+  });
+
+  it('announces errors assertively for screen readers', () => {
+    const bubble = createBubble(() => {});
+    bubble.showError('boom');
+    const error = bubble.root.querySelector('.tm-error') as HTMLElement;
+    expect(error.getAttribute('role')).toBe('alert');
+  });
+
   it('copies the summary text from the header copy button', async () => {
     const writeText = vi.fn().mockResolvedValue(undefined);
     Object.defineProperty(navigator, 'clipboard', {

@@ -37,6 +37,7 @@ export function createBubble(onClose: () => void): Bubble {
   header.appendChild(el('span', 'tm-title', '🧸 Toddler Mode'));
   const headerBtns = el('div', 'tm-header-btns');
   const copyBtn = button('tm-copy', '⧉', 'Copy summary');
+  copyBtn.style.display = 'none'; // nothing to copy until text streams in
   const closeBtn = button('tm-close', '✕', 'Close');
   closeBtn.addEventListener('click', onClose);
   headerBtns.appendChild(copyBtn);
@@ -81,6 +82,10 @@ export function createBubble(onClose: () => void): Bubble {
     }, 1200);
   }
 
+  function syncCopyVisibility(): void {
+    copyBtn.style.display = textEl.textContent ? '' : 'none';
+  }
+
   // Single error slot: created on first error, its content replaced on
   // later errors — errors never stack.
   let errorEl: HTMLElement | null = null;
@@ -98,9 +103,11 @@ export function createBubble(onClose: () => void): Bubble {
     },
     appendText(delta) {
       textEl.textContent += delta;
+      syncCopyVisibility();
     },
     setText(text) {
       textEl.textContent = text;
+      syncCopyVisibility();
     },
     getText() {
       return textEl.textContent ?? '';
@@ -109,6 +116,7 @@ export function createBubble(onClose: () => void): Bubble {
       loading.style.display = 'none';
       if (!errorEl) {
         errorEl = el('div', 'tm-error');
+        errorEl.setAttribute('role', 'alert');
         body.appendChild(errorEl);
       }
       errorEl.textContent = `Uh oh! ${message || 'Something broke.'}`;

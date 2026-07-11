@@ -107,6 +107,9 @@
 
 .tm-body {
   padding: 14px;
+  /* Long summaries scroll instead of clipping (root has overflow: hidden). */
+  max-height: min(50vh, 400px);
+  overflow-y: auto;
 }
 .tm-status {
   font-size: 13px;

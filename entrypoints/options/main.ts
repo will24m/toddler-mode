@@ -81,17 +81,25 @@ downloadLocalEl.addEventListener('click', async () => {
 
 // ---- Cloud fallback settings --------------------------------------------
 
-// When the provider changes, fill in that provider's defaults.
+// When the provider changes, fill in that provider's defaults — but never
+// clobber a value the user typed themselves (empty or another provider's
+// default is fair game; anything else is theirs).
 providerEl.addEventListener('change', () => {
   const d = PROVIDER_DEFAULTS[providerEl.value as Provider] ?? PROVIDER_DEFAULTS.custom;
-  endpointEl.value = d.endpoint;
-  modelEl.value = d.model;
+  if (isDefaultOrEmpty(endpointEl.value.trim(), 'endpoint')) endpointEl.value = d.endpoint;
+  if (isDefaultOrEmpty(modelEl.value.trim(), 'model')) modelEl.value = d.model;
 });
 
+function isDefaultOrEmpty(value: string, field: 'endpoint' | 'model'): boolean {
+  return !value || Object.values(PROVIDER_DEFAULTS).some((d) => d[field] === value);
+}
+
+toggleKeyEl.setAttribute('aria-pressed', 'false');
 toggleKeyEl.addEventListener('click', () => {
   const showing = apiKeyEl.type === 'text';
   apiKeyEl.type = showing ? 'password' : 'text';
   toggleKeyEl.textContent = showing ? 'Show' : 'Hide';
+  toggleKeyEl.setAttribute('aria-pressed', String(!showing));
 });
 
 // Saves everything; returns false when validation blocked the save.
@@ -141,6 +149,8 @@ const TEST_TIMEOUT_MS = 30_000;
 function testConnection(): void {
   statusEl.classList.remove('warn');
   statusEl.textContent = 'Testing… 🧪';
+  saveEl.disabled = true;
+  saveTestEl.disabled = true;
   const port = browser.runtime.connect({ name: SUMMARIZE_PORT });
   let settled = false;
   const timer = setTimeout(() => {
@@ -150,6 +160,8 @@ function testConnection(): void {
     if (settled) return;
     settled = true;
     clearTimeout(timer);
+    saveEl.disabled = false;
+    saveTestEl.disabled = false;
     try {
       port.disconnect();
     } catch {
@@ -194,13 +206,13 @@ async function ensureEndpointPermission(endpoint: string): Promise<string | null
 function flashStatus(text: string, opts: { warn?: boolean } = {}): void {
   statusEl.textContent = text;
   statusEl.classList.toggle('warn', Boolean(opts.warn));
-  setTimeout(
-    () => {
-      statusEl.textContent = '';
-      statusEl.classList.remove('warn');
-    },
-    opts.warn ? 6000 : 2000,
-  );
+  // Success confirmations fade; warnings stay until the user acts again —
+  // a problem message that vanishes on its own is a problem missed.
+  if (opts.warn) return;
+  setTimeout(() => {
+    statusEl.textContent = '';
+    statusEl.classList.remove('warn');
+  }, 2000);
 }
 
 // Load saved settings on open.
