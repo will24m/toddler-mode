@@ -1,0 +1,66 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Toddler Mode — Settings</title>
+  </head>
+  <body>
+    <h1>🧸 Toddler Mode</h1>
+    <p class="sub">Highlight text, tap the bear, get a baby-simple summary.</p>
+
+    <h2>On-device AI (recommended)</h2>
+    <p class="hint">
+      Runs privately on your device with Chrome's built-in Gemini Nano — no key, nothing sent to a
+      server. Used automatically whenever it's available.
+    </p>
+    <div class="status-card">
+      <div id="localStatus">Checking…</div>
+      <button type="button" id="downloadLocal">Set up on-device AI</button>
+    </div>
+
+    <hr />
+
+    <h2>Cloud fallback (optional)</h2>
+    <p class="hint">Used only when on-device AI isn't available on this device.</p>
+
+    <div class="field">
+      <label for="provider">AI provider</label>
+      <select id="provider">
+        <option value="openai">OpenAI (or any OpenAI-compatible)</option>
+        <option value="anthropic">Anthropic (Claude)</option>
+        <option value="custom">Custom endpoint</option>
+      </select>
+    </div>
+
+    <div class="field">
+      <label for="endpoint">API endpoint <span class="hint">— the full URL to call</span></label>
+      <input type="text" id="endpoint" placeholder="https://api.openai.com/v1/chat/completions" />
+    </div>
+
+    <div class="field">
+      <label for="apiKey">API key <span class="hint">— stored locally on this device only</span></label>
+      <div class="key-row">
+        <input type="password" id="apiKey" placeholder="sk-..." autocomplete="off" />
+        <button type="button" id="toggleKey">Show</button>
+      </div>
+    </div>
+
+    <div class="field">
+      <label for="model">Model</label>
+      <input type="text" id="model" placeholder="gpt-4o-mini" />
+    </div>
+
+    <div class="row">
+      <button type="button" id="save">Save settings</button>
+      <span id="status"></span>
+    </div>
+
+    <div class="note">
+      Your API key lives in this browser's local storage and is sent only to the endpoint above.
+      Provider, endpoint, and model sync across your signed-in browsers; the key never does.
+    </div>
+
+    <script type="module" src="./main.ts"></script>
+  </body>
+</html>
