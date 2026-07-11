@@ -1,5 +1,6 @@
 import { isConfigComplete, loadCloudConfig } from '@/utils/config';
-import { SUMMARIZE_PORT, type PortResponse, type SummarizeRequest } from '@/utils/messaging';
+import { endpointOriginPattern, validateEndpoint } from '@/utils/endpoint';
+import { SUMMARIZE_PORT, parseSummarizeText, type PortResponse } from '@/utils/messaging';
 import { buildRequest } from '@/utils/providers';
 import { createSseLineSplitter } from '@/utils/sse';
 
@@ -31,9 +32,11 @@ export default defineBackground(() => {
       controller.abort(); // abort the in-flight fetch when the bubble closes
     });
 
-    port.onMessage.addListener((msg: SummarizeRequest) => {
-      if (msg?.type !== 'summarize') return;
-      runSummarize(msg.text, port, controller).catch((err) => {
+    port.onMessage.addListener((msg: unknown) => {
+      // Strict parse — the background never trusts the port message shape.
+      const text = parseSummarizeText(msg);
+      if (text === null) return;
+      runSummarize(text, port, controller).catch((err) => {
         if (active) post(port, { type: 'error', message: errToMessage(err) });
       });
     });
@@ -63,6 +66,19 @@ async function runSummarize(
 
   const request = buildRequest(text, config);
 
+  // Same policy the options page enforces on save; re-checked here so a bad
+  // endpoint can never be fetched no matter how it got into storage.
+  const endpointProblem = validateEndpoint(request.url);
+  if (endpointProblem) throw new Error(endpointProblem);
+
+  const origin = endpointOriginPattern(request.url);
+  const granted = origin && (await browser.permissions.contains({ origins: [origin] }));
+  if (!granted) {
+    throw new Error(
+      'Toddler Mode needs permission to reach this endpoint — open the extension settings and save them again to grant it.',
+    );
+  }
+
   let stalled = false;
   const onStall = () => {
     stalled = true;
@@ -80,6 +96,9 @@ async function runSummarize(
       headers: request.headers,
       body: JSON.stringify(request.body),
       signal: controller.signal,
+      // The API key rides in a header; never let it follow a redirect to a
+      // different origin. The supported APIs don't redirect anyway.
+      redirect: 'error',
     });
 
     if (!res.ok) {
