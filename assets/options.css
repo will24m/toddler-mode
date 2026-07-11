@@ -1,6 +1,7 @@
 :root {
   --orange: #ff9a6b;
   --orange-dark: #ff8654;
+  color-scheme: light dark; /* native controls follow the OS theme */
 }
 body {
   font-family: system-ui, -apple-system, 'Segoe UI', sans-serif;
@@ -134,4 +135,46 @@ button#save:hover {
   border-radius: 10px;
   font-size: 13px;
   color: #6b4a2b;
+}
+
+@media (prefers-color-scheme: dark) {
+  body {
+    color: #ececec;
+    background: #1c1c1f;
+  }
+  p.sub {
+    color: #b0b0b0;
+  }
+  hr {
+    border-top-color: #333;
+  }
+  .hint {
+    color: #9a9a9a;
+  }
+  input,
+  select {
+    background: #26262b;
+    color: #ececec;
+    border-color: #444;
+  }
+  .key-row button {
+    background: #2e2e33;
+    color: #ececec;
+    border-color: #444;
+  }
+  #status {
+    color: #7bd389;
+  }
+  #status.warn {
+    color: #ff8a95;
+  }
+  .status-card {
+    background: #212a21;
+    border-color: #2e4230;
+  }
+  .note {
+    background: #2b241d;
+    border-color: #4a3a28;
+    color: #e0c4a4;
+  }
 }

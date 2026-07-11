@@ -26,6 +26,20 @@
 .tm-icon:hover {
   transform: scale(1.1);
 }
+/* display:none -> flex re-triggers the animation on every show */
+.tm-icon {
+  animation: tm-pop 0.16s ease-out;
+}
+@keyframes tm-pop {
+  from {
+    opacity: 0;
+    transform: scale(0.6);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
 
 .tm-bubble {
   position: fixed;
@@ -40,6 +54,17 @@
   font-family: system-ui, -apple-system, 'Segoe UI', sans-serif;
   pointer-events: auto;
   overflow: hidden;
+  animation: tm-rise 0.18s ease-out;
+}
+@keyframes tm-rise {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 .tm-header {
@@ -55,7 +80,12 @@
 .tm-title {
   user-select: none;
 }
-.tm-close {
+.tm-header-btns {
+  display: flex;
+  gap: 6px;
+}
+.tm-close,
+.tm-copy {
   background: rgba(255, 255, 255, 0.4);
   border: none;
   border-radius: 50%;
@@ -70,7 +100,8 @@
   justify-content: center;
   padding: 0;
 }
-.tm-close:hover {
+.tm-close:hover,
+.tm-copy:hover {
   background: rgba(255, 255, 255, 0.75);
 }
 
@@ -97,7 +128,8 @@
   font-size: 14px;
 }
 
-.tm-setup-btn {
+.tm-setup-btn,
+.tm-retry-btn {
   margin-top: 10px;
   background: #ff9a6b;
   color: #ffffff;
@@ -108,8 +140,14 @@
   font-size: 14px;
   font-weight: 600;
 }
-.tm-setup-btn:hover {
+.tm-setup-btn:hover,
+.tm-retry-btn:hover {
   background: #ff8654;
+}
+.tm-retry-btn {
+  display: block;
+  padding: 6px 12px;
+  font-size: 13px;
 }
 
 .tm-loading {
@@ -139,5 +177,53 @@
   50% {
     opacity: 1;
     transform: translateY(-3px);
+  }
+}
+
+/* Follow the OS theme so the bubble isn't a white flashbang on dark pages.
+   The warm header gradient is the brand and stays in both themes. */
+@media (prefers-color-scheme: dark) {
+  .tm-icon {
+    background: #2e2e33;
+    border-color: rgba(255, 255, 255, 0.16);
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.5);
+  }
+  .tm-bubble {
+    background: #26262b;
+    color: #ececec;
+    border-color: rgba(255, 255, 255, 0.12);
+    box-shadow: 0 8px 30px rgba(0, 0, 0, 0.55);
+  }
+  .tm-status {
+    color: #a5a5a5;
+  }
+  .tm-error {
+    color: #ff8a95;
+  }
+}
+
+/* Calmer for users who ask for less motion: no entrances, no bouncing —
+   the dots still pulse opacity so "loading" stays legible. */
+@media (prefers-reduced-motion: reduce) {
+  .tm-icon,
+  .tm-bubble {
+    animation: none;
+  }
+  .tm-icon,
+  .tm-icon:hover {
+    transition: none;
+    transform: none;
+  }
+  .tm-dot {
+    animation-name: tm-blink-soft;
+  }
+  @keyframes tm-blink-soft {
+    0%,
+    100% {
+      opacity: 0.3;
+    }
+    50% {
+      opacity: 1;
+    }
   }
 }
