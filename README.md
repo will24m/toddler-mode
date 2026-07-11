@@ -50,9 +50,14 @@ npm install        # also runs `wxt prepare`
 npm run dev        # launches Chrome with the extension + HMR
 npm test           # Vitest unit tests
 npm run check      # TypeScript (tsc --noEmit)
+npm run lint       # Biome lint + format check
+npm run format     # Biome auto-fix
 npm run build      # production build into .output/chrome-mv3
 npm run zip        # store-ready zip
 ```
+
+CI (GitHub Actions) runs lint, tests, typecheck, and the build on every push;
+Dependabot files weekly dependency-update PRs.
 
 ## Install (from a build)
 
@@ -103,7 +108,8 @@ Hardening built in:
 
 Highlight some text (mouse, or Shift+arrows / Ctrl-A) → click the 🧸 → read the bubble.
 Press `Esc`, click the ✕, or click elsewhere to close it. The bubble stays anchored to
-your selection while you scroll.
+your selection while you scroll. Clicking the toolbar icon opens the settings page
+(it also opens once automatically on first install).
 
 ## Tweak the voice
 
@@ -114,3 +120,4 @@ The toddler personality is the `TODDLER_PROMPT` string in
 
 - The icons are generated placeholders (`python3 gen_icons.py` regenerates them into
   `public/icon/`); swap in your own PNGs anytime.
+- Licensed under the [MIT License](LICENSE).
