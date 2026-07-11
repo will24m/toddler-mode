@@ -3,6 +3,7 @@ import {
   PROVIDER_DEFAULTS,
   apiKeyItem,
   endpointItem,
+  loadCloudConfig,
   modelItem,
   providerItem,
   type Provider,
@@ -122,9 +123,10 @@ async function ensureEndpointPermission(endpoint: string): Promise<string | null
   const origin = endpointOriginPattern(endpoint);
   if (!origin) return null; // validateEndpoint already vouched for the URL
   try {
-    if (await browser.permissions.contains({ origins: [origin] })) return null;
-    const granted = await browser.permissions.request({ origins: [origin] });
-    if (granted) return null;
+    // request() resolves true without prompting when the origin is already
+    // granted, so it's called directly — a preceding awaited contains() call
+    // could burn the click's transient user-gesture activation.
+    if (await browser.permissions.request({ origins: [origin] })) return null;
   } catch {
     // Fall through — e.g. the origin isn't coverable by optional_host_permissions.
   }
@@ -142,12 +144,7 @@ function flashStatus(text: string, opts: { warn?: boolean } = {}): void {
 
 // Load saved settings on open.
 async function load(): Promise<void> {
-  const [provider, endpoint, model, apiKey] = await Promise.all([
-    providerItem.getValue(),
-    endpointItem.getValue(),
-    modelItem.getValue(),
-    apiKeyItem.getValue(),
-  ]);
+  const { provider, endpoint, model, apiKey } = await loadCloudConfig();
   providerEl.value = provider;
   const d = PROVIDER_DEFAULTS[provider] ?? PROVIDER_DEFAULTS.custom;
   endpointEl.value = endpoint || d.endpoint;

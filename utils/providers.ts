@@ -1,4 +1,4 @@
-import type { CloudConfig } from '@/utils/config';
+import { PROVIDER_DEFAULTS, type CloudConfig } from '@/utils/config';
 import { TODDLER_PROMPT } from '@/utils/prompt';
 import { parseAnthropicLine, parseOpenAILine, type SseLineParser } from '@/utils/sse';
 
@@ -17,7 +17,7 @@ export interface ProviderRequest {
 export function buildRequest(text: string, config: CloudConfig): ProviderRequest {
   if (config.provider === 'anthropic') {
     return {
-      url: config.endpoint || 'https://api.anthropic.com/v1/messages',
+      url: config.endpoint || PROVIDER_DEFAULTS.anthropic.endpoint,
       headers: {
         'Content-Type': 'application/json',
         'x-api-key': config.apiKey,
@@ -37,7 +37,7 @@ export function buildRequest(text: string, config: CloudConfig): ProviderRequest
 
   // OpenAI-compatible (also used for "custom" endpoints).
   return {
-    url: config.endpoint || 'https://api.openai.com/v1/chat/completions',
+    url: config.endpoint || PROVIDER_DEFAULTS.openai.endpoint,
     headers: {
       'Content-Type': 'application/json',
       Authorization: `Bearer ${config.apiKey}`,
