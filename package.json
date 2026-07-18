@@ -15,8 +15,8 @@
     "postinstall": "wxt prepare"
   },
   "devDependencies": {
-    "@biomejs/biome": "^2.5.3",
-    "happy-dom": "^20.10.6",
+    "@biomejs/biome": "^2.5.4",
+    "happy-dom": "^20.11.0",
     "typescript": "^7.0.2",
     "vitest": "^4.1.10",
     "wxt": "^0.20.27"
